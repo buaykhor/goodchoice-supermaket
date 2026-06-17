@@ -7,7 +7,8 @@ require('dotenv').config()
 const { Pool } = require('pg');
 
 
-// ─── Database ─────────────────────────────────────────────────────────────────
+// ─── Database ──────────────────────────────────
+// ───────────────────────────────
 
 const pool = new Pool({
   host:     'localhost',
@@ -57,6 +58,7 @@ function requireLogin(req, res, next) {
 
 app.get('/',       (_req, res) => res.render('home'));
 app.get('/login',  (_req, res) => res.render('login',  { error: null }));
+
 app.get('/signup', (_req, res) => res.render('signup', { error: null }));
 
 app.post('/logout', (req, res) => {
@@ -145,9 +147,6 @@ app.post('/login', async (req, res) => {
     res.render('login', { error: 'Something went wrong. Please try again.' });
   }
 });
-
-// ─── Director Dashboard ───────────────────────────────────────────────────────
-
 app.get('/dashboard', requireLogin, async (req, res) => {
   try {
     const user = req.session.user;
@@ -174,6 +173,8 @@ app.get('/dashboard', requireLogin, async (req, res) => {
     const branchSales      = [];
     const inventory        = [];
     const staffPerformance = [];
+    const sales            = [];
+    const topProducts      = [];
 
     res.render('dashboard-director', {
       user,
@@ -181,7 +182,9 @@ app.get('/dashboard', requireLogin, async (req, res) => {
       salesChart,
       branchSales,
       inventory,
-      staffPerformance
+      staffPerformance,
+      sales,
+      topProducts
     });
 
   } catch (err) {
