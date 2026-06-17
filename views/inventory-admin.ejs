@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory admin dashboard</title>
+  <link rel="stylesheet" href="/css/inventory.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Inventory admin dashboard</h1>
+
+    <!-- Overview cards -->
+    <div class="cards">
+      <div class="card stat">
+        <p class="label">Total products</p>
+        <p class="value"><%= summary.totalProducts %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">Stock value (cost)</p>
+        <p class="value">UGX <%= Math.round(summary.totalStockValue).toLocaleString() %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">Low stock items</p>
+        <p class="value"><%= summary.lowStockCount %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">Total sales revenue</p>
+        <p class="value">UGX <%= Math.round(summary.totalRevenue).toLocaleString() %></p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="products">Products</button>
+      <button class="tab-btn" data-tab="categories">Categories</button>
+      <button class="tab-btn" data-tab="stock">Stock &amp; procurement</button>
+      <button class="tab-btn" data-tab="sales">Sales</button>
+      <button class="tab-btn" data-tab="reports">Reports</button>
+    </div>
+
+    <!-- Products -->
+    <section id="products" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Add new product</p>
+        <form action="/products/add" method="POST" class="form-row">
+          <label>Name
+            <input type="text" name="name" placeholder="Product name" required />
+          </label>
+          <label>Category
+            <select name="categoryId" required>
+              <% if (categories.length === 0) { %>
+                <option value="">No categories</option>
+              <% } else { %>
+                <% categories.forEach(c => { %>
+                  <option value="<%= c.id %>"><%= c.name %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </label>
+          <label>Cost price
+            <input type="number" name="costPrice" min="0" value="0" />
+          </label>
+          <label>Selling price
+            <input type="number" name="sellingPrice" min="0" value="0" />
+          </label>
+          <label>Initial stock
+            <input type="number" name="stock" min="0" value="0" />
+          </label>
+          <label>Reorder level
+            <input type="number" name="reorder" min="0" value="5" />
+          </label>
+          <button type="submit" class="btn">Add product</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Products (<%= products.length %>)</p>
+        <table>
+          <colgroup>
+            <col style="width:22%"><col style="width:16%"><col style="width:14%">
+            <col style="width:16%"><col style="width:8%"><col style="width:10%"><col style="width:14%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Name</th><th>Category</th><th>Cost price</th>
+              <th>Selling price</th><th>Stock</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (products.length === 0) { %>
+              <tr><td colspan="7" class="muted">No products yet</td></tr>
+            <% } %>
+            <% products.forEach(p => { %>
+              <tr>
+                <td><%= p.name %></td>
+                <td><%= p.categoryName %></td>
+                <td>UGX <%= Math.round(p.costPrice).toLocaleString() %></td>
+                <td>
+                  <form action="/products/<%= p.id %>/price" method="POST" class="inline-form">
+                    <input type="number" name="sellingPrice" min="0" value="<%= p.sellingPrice %>" class="price-input" />
+                    <button type="submit" class="btn small">Save</button>
+                  </form>
+                </td>
+                <td><%= p.stock %></td>
+                <td><span class="badge <%= p.low ? 'low' : 'ok' %>"><%= p.low ? 'Low' : 'OK' %></span></td>
+                <td>
+                  <form action="/products/<%= p.id %>/delete" method="POST" class="inline-form">
+                    <button type="submit" class="btn small danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section id="categories" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Add new category</p>
+        <form action="/categories/add" method="POST" class="form-row">
+          <label>Name
+            <input type="text" name="name" placeholder="Category name" required />
+          </label>
+          <button type="submit" class="btn">Add category</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Categories (<%= categories.length %>)</p>
+        <table>
+          <colgroup><col style="width:60%"><col style="width:25%"><col style="width:15%"></colgroup>
+          <thead><tr><th>Name</th><th>Products</th><th></th></tr></thead>
+          <tbody>
+            <% if (categories.length === 0) { %>
+              <tr><td colspan="3" class="muted">No categories yet</td></tr>
+            <% } %>
+            <% categories.forEach(c => { %>
+              <tr>
+                <td><%= c.name %></td>
+                <td><%= c.productCount %></td>
+                <td>
+                  <form action="/categories/<%= c.id %>/delete" method="POST" class="inline-form">
+                    <button type="submit" class="btn small danger" <%= c.productCount > 0 ? 'disabled title="Category has products assigned"' : '' %>>Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Stock & procurement -->
+    <section id="stock" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Record procurement (stock in)</p>
+        <form action="/stock/procure" method="POST" class="form-row">
+          <label>Product
+            <select name="productId" required>
+              <% products.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.name %> (stock: <%= p.stock %>)</option>
+              <% }) %>
+            </select>
+          </label>
+          <label>Quantity received
+            <input type="number" name="qty" min="1" value="1" required />
+          </label>
+          <label>Unit cost (optional)
+            <input type="number" name="unitCost" min="0" placeholder="keep current" />
+          </label>
+          <button type="submit" class="btn">Receive stock</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Stock adjustment</p>
+        <form action="/stock/adjust" method="POST" class="form-row">
+          <label>Product
+            <select name="productId" required>
+              <% products.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.name %> (stock: <%= p.stock %>)</option>
+              <% }) %>
+            </select>
+          </label>
+          <label>Adjustment (+/-)
+            <input type="number" name="qty" value="0" required />
+          </label>
+          <label>Reason
+            <input type="text" name="reason" placeholder="e.g. damaged, recount" />
+          </label>
+          <button type="submit" class="btn">Apply adjustment</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Recent stock movements</p>
+        <table>
+          <colgroup><col style="width:18%"><col style="width:32%"><col style="width:20%"><col style="width:10%"><col style="width:20%"></colgroup>
+          <thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Note</th></tr></thead>
+          <tbody>
+            <% if (movements.length === 0) { %>
+              <tr><td colspan="5" class="muted">No movements yet</td></tr>
+            <% } %>
+            <% movements.forEach(m => { %>
+              <tr>
+                <td><%= m.date %></td>
+                <td><%= m.productName %></td>
+                <td><%= m.type %></td>
+                <td><%= m.qty > 0 ? '+' + m.qty : m.qty %></td>
+                <td><%= m.note %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Sales -->
+    <section id="sales" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Record sale</p>
+        <form action="/sales/add" method="POST" class="form-row">
+          <label>Product
+            <select name="productId" required>
+              <% products.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.name %> — UGX <%= Math.round(p.sellingPrice).toLocaleString() %> (stock: <%= p.stock %>)</option>
+              <% }) %>
+            </select>
+          </label>
+          <label>Quantity
+            <input type="number" name="qty" min="1" value="1" required />
+          </label>
+          <button type="submit" class="btn">Record sale</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Recent sales</p>
+        <table>
+          <colgroup><col style="width:18%"><col style="width:32%"><col style="width:12%"><col style="width:18%"><col style="width:20%"></colgroup>
+          <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead>
+          <tbody>
+            <% if (sales.length === 0) { %>
+              <tr><td colspan="5" class="muted">No sales recorded yet</td></tr>
+            <% } %>
+            <% sales.forEach(s => { %>
+              <tr>
+                <td><%= s.date %></td>
+                <td><%= s.productName %></td>
+                <td><%= s.qty %></td>
+                <td>UGX <%= Math.round(s.price).toLocaleString() %></td>
+                <td>UGX <%= Math.round(s.total).toLocaleString() %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Reports -->
+    <section id="reports" class="tab-panel">
+      <div class="cards">
+        <div class="card stat">
+          <p class="label">Total revenue</p>
+          <p class="value">UGX <%= Math.round(summary.totalRevenue).toLocaleString() %></p>
+        </div>
+        <div class="card stat">
+          <p class="label">Cost of goods sold</p>
+          <p class="value">UGX <%= Math.round(summary.totalCost).toLocaleString() %></p>
+        </div>
+        <div class="card stat">
+          <p class="label">Gross profit</p>
+          <p class="value">UGX <%= Math.round(summary.grossProfit).toLocaleString() %></p>
+        </div>
+        <div class="card stat">
+          <p class="label">Current inventory value</p>
+          <p class="value">UGX <%= Math.round(summary.totalStockValue).toLocaleString() %></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Top selling products</p>
+        <table>
+          <colgroup><col style="width:50%"><col style="width:20%"><col style="width:30%"></colgroup>
+          <thead><tr><th>Product</th><th>Units sold</th><th>Revenue</th></tr></thead>
+          <tbody>
+            <% if (topProducts.length === 0) { %>
+              <tr><td colspan="3" class="muted">No sales recorded yet</td></tr>
+            <% } %>
+            <% topProducts.forEach(tp => { %>
+              <tr>
+                <td><%= tp.name %></td>
+                <td><%= tp.qty %></td>
+                <td>UGX <%= Math.round(tp.revenue).toLocaleString() %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Low stock alerts</p>
+        <table>
+          <colgroup><col style="width:35%"><col style="width:25%"><col style="width:20%"><col style="width:20%"></colgroup>
+          <thead><tr><th>Product</th><th>Category</th><th>Current stock</th><th>Reorder level</th></tr></thead>
+          <tbody>
+            <% if (lowStockProducts.length === 0) { %>
+              <tr><td colspan="4" class="muted">All products are above reorder level</td></tr>
+            <% } %>
+            <% lowStockProducts.forEach(p => { %>
+              <tr>
+                <td><%= p.name %></td>
+                <td><%= p.categoryName %></td>
+                <td><%= p.stock %></td>
+                <td><%= p.reorder %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <div class="container">
+    <div class="page-header">
+      <h1>Inventory admin dashboard</h1>
+      <form action="/logout" method="POST" class="logout-form">
+        <button type="submit" class="btn small logout-btn">Logout</button>
+      </form>
+    </div>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<%- include('partials/header', { title: 'Sign Up' }) %>
+
+<div class="auth-wrapper">
+  <div class="auth-card wide">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🛒</div>
+      <h2>Good <span>Choice</span></h2>
+      <span class="auth-subtitle">Create your staff account</span>
+    </div>
+
+    <!-- Error -->
+    <% if (error) { %>
+      <div class="error-box">⚠️ <%= error %></div>
+    <% } %>
+
+    <form action="/signup" method="POST" id="signupForm">
+
+      <!-- Full Name + Staff ID -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fullname">Full Name</label>
+          <div class="input-icon-wrap">
+            <span class="icon">👤</span>
+            <input
+              type="text"
+              id="fullname"
+              name="fullname"
+              placeholder="Buay Khor"
+              required
+              autocomplete="name"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="staffId">Staff ID <span style="font-weight:400;text-transform:none;font-size:.75rem;color:var(--gc-mid)">(optional)</span></label>
+          <div class="input-icon-wrap">
+            <span class="icon">🪪</span>
+            <input
+              type="text"
+              id="staffId"
+              name="staffId"
+              placeholder="GC-00123"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Work Email</label>
+        <div class="input-icon-wrap">
+          <span class="icon">✉️</span>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="buay@goodchoice.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <div class="input-icon-wrap">
+          <span class="icon">📞</span>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="+256 769 356 930"
+            autocomplete="tel"
+          />
+        </div>
+      </div>
+
+      <!-- Password + Confirm -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-icon-wrap">
+            <span class="icon">🔒</span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Min. 8 characters"
+              required
+              minlength="8"
+              autocomplete="new-password"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="confirm">Confirm Password</label>
+          <div class="input-icon-wrap">
+            <span class="icon">🔒</span>
+            <input
+              type="password"
+              id="confirm"
+              name="confirm"
+              placeholder="Repeat password"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch -->
+      <div class="form-group">
+        <label for="branch">Branch / Store Location</label>
+        <select id="branch" name="branch" required>
+          <option value="" disabled selected>Select your branch…</option>
+          <option value="main">Main Branch – Kampala Road</option>
+          <option value="north">North Branch – Gulu Road</option>
+          <option value="east">East Branch – Jinja Road</option>
+          <option value="west">West Branch – Fort Portal</option>
+          <option value="south">South Branch – Masaka Road</option>
+        </select>
+      </div>
+
+      <!-- Role Selection -->
+      <div class="form-group">
+        <label>Select Your Role</label>
+        <div class="role-grid" id="roleGrid">
+
+          <label class="role-card" for="role-director">
+            <input type="radio" name="role" id="role-director" value="director" required />
+            <div class="role-icon">👑</div>
+            <div class="role-label">Director</div>
+            <div class="role-desc">Full system access &amp; financials</div>
+          </label>
+
+          <label class="role-card" for="role-admin">
+            <input type="radio" name="role" id="role-admin" value="admin" />
+            <div class="role-icon">🗂️</div>
+            <div class="role-label">Admin</div>
+            <div class="role-desc">Inventory, pricing &amp; reports</div>
+          </label>
+
+          <label class="role-card" for="role-sales">
+            <input type="radio" name="role" id="role-sales" value="sales_agent" />
+            <div class="role-icon">🛍️</div>
+            <div class="role-label">Sales Agent</div>
+            <div class="role-desc">POS &amp; customer transactions</div>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- ✅ FIX: Director Access Code field (hidden by default) -->
+      <div class="form-group" id="accessCodeGroup" style="display:none;">
+        <label for="accessCode">Director Access Code</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔑</span>
+          <input
+            type="password"
+            id="accessCode"
+            name="accessCode"
+            placeholder="Enter director access code"
+          />
+        </div>
+      </div>
+
+      <!-- Terms -->
+      <div style="display:flex;align-items:flex-start;gap:.6rem;margin-bottom:1.4rem;margin-top:.4rem;">
+        <input type="checkbox" id="terms" name="terms" required style="width:auto;margin-top:.15rem;accent-color:var(--gc-green);" />
+        <label for="terms" style="font-size:.82rem;color:var(--gc-mid);cursor:pointer;text-transform:none;letter-spacing:0;">
+          I agree to the Good Choice
+          <a href="#" style="color:var(--gc-green);font-weight:600;">Terms of Service</a>
+          and
+          <a href="#" style="color:var(--gc-green);font-weight:600;">Privacy Policy</a>.
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submitBtn">
+        ✅ Create Account
+      </button>
+
+    </form>
+
+    <div class="divider">or</div>
+
+    <div class="auth-switch">
+      Already have an account? <a href="/login">Sign in here</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Role card selection highlight
+  const roleCards = document.querySelectorAll('.role-card');
+  const accessCodeGroup = document.getElementById('accessCodeGroup');
+  const accessCodeInput = document.getElementById('accessCode');
+
+  roleCards.forEach(card => {
+    const radio = card.querySelector('input[type="radio"]');
+    card.addEventListener('click', () => {
+      roleCards.forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      // Show access code field only for director
+      if (radio.value === 'director') {
+        accessCodeGroup.style.display = 'block';
+        accessCodeInput.required = true;
+      } else {
+        accessCodeGroup.style.display = 'none';
+        accessCodeInput.required = false;
+        accessCodeInput.value = ''; // clear if switching away
+      }
+    });
+  });
+
+  // Password match validation
+  document.getElementById('signupForm').addEventListener('submit', function(e) {
+    const pw = document.getElementById('password').value;
+    const cf = document.getElementById('confirm').value;
+    if (pw !== cf) {
+      e.preventDefault();
+      alert('Passwords do not match. Please try again.');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

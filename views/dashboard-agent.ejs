@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales agent dashboard</title>
+  <link rel="stylesheet" href="/css/inventory.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>Sales agent dashboard</h1>
+      <div class="header-actions">
+        <span class="agent-name">Hi, <%= agentName %></span>
+        <form action="/logout" method="POST" class="logout-form">
+          <button type="submit" class="btn small logout-btn">Logout</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Overview cards -->
+    <div class="cards">
+      <div class="card stat">
+        <p class="label">Sales today</p>
+        <p class="value"><%= summary.todaysSalesCount %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">Revenue today</p>
+        <p class="value">UGX <%= Math.round(summary.todaysRevenue).toLocaleString() %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">My total sales</p>
+        <p class="value"><%= summary.totalSalesCount %></p>
+      </div>
+      <div class="card stat">
+        <p class="label">Low stock items</p>
+        <p class="value"><%= summary.lowStockCount %></p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="sell">Sell</button>
+      <button class="tab-btn" data-tab="my-sales">My sales</button>
+      <button class="tab-btn" data-tab="stock">Stock</button>
+    </div>
+
+    <!-- Sell -->
+    <section id="sell" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Record sale</p>
+        <form action="/sales/add" method="POST" class="form-row">
+          <label>Product
+            <select name="productId" required>
+              <% if (products.length === 0) { %>
+                <option value="">No products available</option>
+              <% } else { %>
+                <% products.forEach(p => { %>
+                  <option value="<%= p.id %>" <%= p.stock === 0 ? 'disabled' : '' %>>
+                    <%= p.name %> — UGX <%= Math.round(p.sellingPrice).toLocaleString() %> (stock: <%= p.stock %>)
+                  </option>
+                <% }) %>
+              <% } %>
+            </select>
+          </label>
+          <label>Quantity
+            <input type="number" name="qty" min="1" value="1" required />
+          </label>
+          <button type="submit" class="btn">Record sale</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title">Available products</p>
+        <table>
+          <colgroup>
+            <col style="width:30%"><col style="width:20%"><col style="width:20%">
+            <col style="width:15%"><col style="width:15%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (products.length === 0) { %>
+              <tr><td colspan="5" class="muted">No products available</td></tr>
+            <% } %>
+            <% products.forEach(p => { %>
+              <tr>
+                <td><%= p.name %></td>
+                <td><%= p.categoryName %></td>
+                <td>UGX <%= Math.round(p.sellingPrice).toLocaleString() %></td>
+                <td><%= p.stock %></td>
+                <td><span class="badge <%= p.low ? 'low' : 'ok' %>"><%= p.low ? 'Low' : 'OK' %></span></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- My sales -->
+    <section id="my-sales" class="tab-panel">
+      <div class="card">
+        <p class="section-title">My recent sales</p>
+        <table>
+          <colgroup>
+            <col style="width:18%"><col style="width:32%"><col style="width:12%">
+            <col style="width:18%"><col style="width:20%">
+          </colgroup>
+          <thead>
+            <tr><th>Date</th><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            <% if (sales.length === 0) { %>
+              <tr><td colspan="5" class="muted">No sales recorded yet</td></tr>
+            <% } %>
+            <% sales.forEach(s => { %>
+              <tr>
+                <td><%= s.date %></td>
+                <td><%= s.productName %></td>
+                <td><%= s.qty %></td>
+                <td>UGX <%= Math.round(s.price).toLocaleString() %></td>
+                <td>UGX <%= Math.round(s.total).toLocaleString() %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Stock -->
+    <section id="stock" class="tab-panel">
+      <div class="card">
+        <p class="section-title">Stock overview</p>
+        <table>
+          <colgroup>
+            <col style="width:30%"><col style="width:25%"><col style="width:15%">
+            <col style="width:15%"><col style="width:15%">
+          </colgroup>
+          <thead>
+            <tr><th>Name</th><th>Category</th><th>Stock</th><th>Reorder level</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <% if (products.length === 0) { %>
+              <tr><td colspan="5" class="muted">No products yet</td></tr>
+            <% } %>
+            <% products.forEach(p => { %>
+              <tr>
+                <td><%= p.name %></td>
+                <td><%= p.categoryName %></td>
+                <td><%= p.stock %></td>
+                <td><%= p.reorder %></td>
+                <td><span class="badge <%= p.low ? 'low' : 'ok' %>"><%= p.low ? 'Low' : 'OK' %></span></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>

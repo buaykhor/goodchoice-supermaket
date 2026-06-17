@@ -1,0 +1,76 @@
+<%- include('partials/header', { title: 'Log In' }) %>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🛒</div>
+      <h2>Good <span>Choice</span></h2>
+      <span class="auth-subtitle">Supermarket Management System</span>
+    </div>
+
+    <p style="text-align:center;font-size:.9rem;color:var(--gc-mid);margin-bottom:1.5rem;font-weight:500;">
+      Welcome back — sign in to your account
+    </p>
+
+    <!-- Error -->
+    <% if (error) { %>
+      <div class="error-box">⚠️ <%= error %></div>
+    <% } %>
+
+    <!-- Form -->
+    <form action="/login" method="POST">
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="icon">✉️</span>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="you@goodchoice.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:1.2rem;">
+        <a href="/forgot-password" style="font-size:.82rem;color:var(--gc-green);text-decoration:none;font-weight:500;">
+          Forgot password?
+        </a>
+      </div>
+
+      <button type="submit" class="btn-primary">
+        🔑 Sign In
+      </button>
+
+    </form>
+
+    <div class="divider">or</div>
+
+    <div class="auth-switch">
+      Don't have an account? <a href="/signup">Create one here</a>
+    </div>
+
+  </div>
+</div>
+
+<%- include('partials/footer') %>

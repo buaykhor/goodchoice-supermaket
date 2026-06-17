@@ -1,0 +1,379 @@
+
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .dash { padding: 2rem 1.5rem; max-width: 1200px; margin: 0 auto; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;
+  }
+  .topbar-left h1 { font-size: 22px; font-weight: 600; color: #1a1a1a; }
+  .topbar-left p { font-size: 13px; color: #777; margin-top: 3px; }
+  .topbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    font-size: 13px; padding: 8px 16px; border-radius: 8px;
+    border: 1px solid #ddd; background: #fff; color: #333;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; transition: background 0.15s;
+  }
+  .btn:hover { background: #f5f5f5; }
+  .btn-primary { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+  .btn-primary:hover { background: #0F6E56; border-color: #0F6E56; }
+
+  .readonly-note {
+    background: #FFF8EC; border-left: 4px solid #EF9F27;
+    border-radius: 0 8px 8px 0; padding: 10px 16px;
+    font-size: 13px; color: #7A4F0D; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #999; margin-bottom: 10px; margin-top: 1.5rem;
+  }
+
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 1.5rem;
+  }
+  .metric-card { background: #f7f7f5; border-radius: 8px; padding: 1rem; }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 600; color: #1a1a1a; }
+  .metric-sub { font-size: 11px; margin-top: 4px; }
+  .up { color: #1D9E75; } .down { color: #E24B4A; }
+
+  .charts-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px; margin-bottom: 1.5rem;
+  }
+  .chart-card {
+    background: #fff; border: 1px solid #eee;
+    border-radius: 12px; padding: 1.25rem;
+  }
+  .chart-title { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+  .chart-sub { font-size: 12px; color: #999; margin-bottom: 14px; }
+  .chart-legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 10px; font-size: 12px; color: #666;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; }
+
+  .inventory-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin-bottom: 1.5rem;
+  }
+  .inv-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1rem 1.25rem; }
+  .inv-cat { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+  .inv-stat {
+    font-size: 12px; color: #666; margin-bottom: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .inv-stat span:last-child { font-weight: 500; color: #1a1a1a; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+  .badge-ok   { background: #EAF3DE; color: #3B6D11; }
+  .badge-warn { background: #FAEEDA; color: #854F0B; }
+  .badge-low  { background: #FCEBEB; color: #A32D2D; }
+
+  .perf-table-wrap {
+    background: #fff; border: 1px solid #eee;
+    border-radius: 12px; padding: 1.25rem;
+    margin-bottom: 1.5rem; overflow-x: auto;
+  }
+  .perf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .perf-table th {
+    color: #999; font-weight: 600; text-align: left;
+    padding: 6px 10px; border-bottom: 1px solid #eee;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .perf-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; color: #1a1a1a; }
+  .perf-table tr:last-child td { border-bottom: none; }
+  .progress-wrap { background: #eee; border-radius: 4px; height: 6px; width: 100px; overflow: hidden; }
+  .progress-bar { height: 6px; border-radius: 4px; }
+
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem; }
+  .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.logout-btn {
+  background-color: #6b7280;
+}
+.logout-btn:hover {
+  background-color: #4b5563;
+}
+</style>
+
+<div class="dash">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🛒 Good Choice — Director Overview</h1>
+      <p>
+        Welcome back, <strong><%= user.fullname %></strong> &nbsp;·&nbsp;
+        <%= new Date().toLocaleDateString('en-UG', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) %>
+      </p>
+    </div>
+    <div class="topbar-right">
+      <a href="/reports/sales" class="btn">📊 Full Sales Report</a>
+      <a href="/reports/inventory" class="btn">📋 Inventory Report</a>
+      <a href="/reports/export?format=pdf" class="btn btn-primary">⬇️ Export PDF</a>
+    </div>
+  </div>
+
+  <!-- Read-only notice -->
+  <div class="readonly-note">
+    🔒 View-only access — recording sales, procurement, inventory changes, and product creation are managed by Admin and Sales Agent roles.
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="section-title">This month at a glance</div>
+  <div class="metric-grid">
+
+    <div class="metric-card">
+      <div class="metric-label">Total Revenue</div>
+      <div class="metric-value">UGX <%= (stats.totalRevenue / 1000000).toFixed(1) %>M</div>
+      <div class="metric-sub <%= stats.revenueGrowth >= 0 ? 'up' : 'down' %>">
+        <%= stats.revenueGrowth >= 0 ? '▲' : '▼' %> <%= Math.abs(stats.revenueGrowth) %>% vs last month
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Total Transactions</div>
+      <div class="metric-value"><%= stats.totalTransactions.toLocaleString() %></div>
+      <div class="metric-sub <%= stats.txGrowth >= 0 ? 'up' : 'down' %>">
+        <%= stats.txGrowth >= 0 ? '▲' : '▼' %> <%= Math.abs(stats.txGrowth) %>% vs last month
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Avg. Sale Value</div>
+      <div class="metric-value">UGX <%= stats.avgSaleValue.toLocaleString() %></div>
+      <div class="metric-sub up">↑ compared to target</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Active Staff</div>
+      <div class="metric-value"><%= stats.activeStaff %></div>
+      <div class="metric-sub" style="color:#999;">Across <%= stats.branchCount %> branches</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Low Stock Items</div>
+      <div class="metric-value" style="color:<%= stats.lowStockCount > 0 ? '#E24B4A' : '#1D9E75' %>">
+        <%= stats.lowStockCount %>
+      </div>
+      <div class="metric-sub <%= stats.lowStockCount > 0 ? 'down' : 'up' %>">
+        <%= stats.lowStockCount > 0 ? '⚠️ Needs attention' : '✅ All stocked' %>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Gross Profit</div>
+      <div class="metric-value">UGX <%= (stats.grossProfit / 1000000).toFixed(1) %>M</div>
+      <div class="metric-sub up">Margin <%= stats.profitMargin %>%</div>
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+
+    <div class="chart-card">
+      <div class="chart-title">Monthly Sales Revenue</div>
+      <div class="chart-sub">Last 6 months · all branches</div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#1D9E75;"></span>Revenue</span>
+        <span><span class="legend-dot" style="background:#9FE1CB;border:1px dashed #1D9E75;"></span>Target</span>
+      </div>
+      <div style="position:relative;height:220px;">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Sales by Branch</div>
+      <div class="chart-sub">Current month contribution</div>
+      <%
+        var branchColors = ['#1D9E75','#378ADD','#EF9F27','#D4537E','#7F77DD'];
+      %>
+      <div class="chart-legend">
+        <% branchSales.forEach(function(b, i) { %>
+          <span>
+            <span class="legend-dot" style="background:<%= branchColors[i] || '#888' %>;"></span>
+            <%= b.branch %>
+          </span>
+        <% }); %>
+      </div>
+      <div style="position:relative;height:220px;">
+        <canvas id="branchChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Inventory Summary -->
+  <div class="section-title">Inventory summary by category</div>
+  <div class="inventory-grid">
+    <% inventory.forEach(function(cat) { %>
+    <div class="inv-card">
+      <div class="inv-cat"><%= cat.icon %> <%= cat.category %></div>
+      <div class="inv-stat"><span>SKUs tracked</span><span><%= cat.skuCount %></span></div>
+      <div class="inv-stat"><span>Stock value</span><span>UGX <%= (cat.stockValue / 1000000).toFixed(1) %>M</span></div>
+      <div class="inv-stat">
+        <span>Status</span>
+        <span>
+          <% if (cat.lowCount === 0) { %>
+            <span class="badge badge-ok">Healthy</span>
+          <% } else if (cat.lowCount <= 3) { %>
+            <span class="badge badge-warn">Low on <%= cat.lowCount %></span>
+          <% } else { %>
+            <span class="badge badge-low">Low on <%= cat.lowCount %></span>
+          <% } %>
+        </span>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+
+  <!-- Staff Performance -->
+  <div class="section-title">Staff performance — top agents this month</div>
+  <div class="perf-table-wrap">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Branch</th>
+          <th>Transactions</th>
+          <th>Revenue</th>
+          <th>vs Target</th>
+          <th>Performance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% staffPerformance.forEach(function(agent) {
+          var pct = Math.min(Math.round((agent.revenue / agent.target) * 100), 100);
+          var barColor = pct >= 90 ? '#1D9E75' : pct >= 65 ? '#EF9F27' : '#E24B4A';
+        %>
+          <tr>
+            <td><strong><%= agent.fullname %></strong></td>
+            <td><%= agent.branch %></td>
+            <td><%= agent.transactions.toLocaleString() %></td>
+            <td>UGX <%= (agent.revenue / 1000000).toFixed(1) %>M</td>
+            <td style="color:<%= barColor %>;font-weight:500;"><%= pct %>%</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar" style="width:<%= pct %>%;background:<%= barColor %>;"></div>
+              </div>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-row">
+    <a href="/reports/performance?download=1" class="btn">⬇️ Download Performance Report</a>
+    <a href="/inventory/low-stock" class="btn">⚠️ View Low Stock Items</a>
+    <a href="/reports/export?format=pdf&amp;scope=full" class="btn btn-primary">⬇️ Export Full Report as PDF</a>
+
+  </div>
+
+</div>
+<div class="container">
+    <div class="page-header">
+      <h1>Director Overview dashboard</h1>
+      <form action="/logout" method="POST" class="logout-form">
+        <button type="submit" class="btn small logout-btn">Logout</button>
+      </form>
+    </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  var salesLabels = <%- JSON.stringify(salesChart.labels) %>;
+  var salesData   = <%- JSON.stringify(salesChart.revenue) %>;
+  var salesTarget = <%- JSON.stringify(salesChart.target) %>;
+
+  new Chart(document.getElementById('salesChart'), {
+    type: 'bar',
+    data: {
+      labels: salesLabels,
+      datasets: [
+        {
+          label: 'Revenue',
+          data: salesData,
+          backgroundColor: '#1D9E75',
+          borderRadius: 4,
+          order: 2
+        },
+        {
+          label: 'Target',
+          data: salesTarget,
+          type: 'line',
+          borderColor: '#9FE1CB',
+          borderDash: [5, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: {
+            color: '#aaa',
+            font: { size: 11 },
+            autoSkip: false
+          },
+          grid: { display: false }
+        },
+        y: {
+          ticks: {
+            color: '#aaa',
+            font: { size: 11 },
+            callback: function(v) { return 'UGX ' + v + 'M'; }
+          },
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        }
+      }
+    }
+  });
+
+  var branchLabels = <%- JSON.stringify(branchSales.map(function(b){ return b.branch; })) %>;
+  var branchData   = <%- JSON.stringify(branchSales.map(function(b){ return b.revenue; })) %>;
+
+  new Chart(document.getElementById('branchChart'), {
+    type: 'doughnut',
+    data: {
+      labels: branchLabels,
+      datasets: [{
+        data: branchData,
+        backgroundColor: ['#1D9E75','#378ADD','#EF9F27','#D4537E','#7F77DD'],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>
