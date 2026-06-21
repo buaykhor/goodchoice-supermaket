@@ -1,112 +1,240 @@
 <%- include('partials/header', { title: 'Welcome' }) %>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-tag">🌿 Smart. Fresh. Local.</div>
-  <h1>Manage Your Store<br>the <span>Good Choice</span> Way</h1>
-  <p class="hero-sub">
-    A complete retail management platform built for modern supermarkets —
-    from inventory and sales to staff roles and daily reporting.
-  </p>
-  <div class="hero-actions">
-    <a href="/signup" class="btn-hero-primary">🚀 Get Started Free</a>
-    <a href="/login" class="btn-hero-outline">🔑 Staff Login</a>
-  </div>
-</section>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
 
-<!-- STATS BAR -->
-<div class="stats-bar">
-  <div class="stat">
-    <div class="stat-num">12,400+</div>
-    <div class="stat-label">Products Tracked</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">99.9%</div>
-    <div class="stat-label">Uptime</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">3 Roles</div>
-    <div class="stat-label">Director · Admin · Sales</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">Real-time</div>
-    <div class="stat-label">Inventory Updates</div>
-  </div>
+  :root {
+    --navy:       #102A43;
+    --blue:       #1E5A8A;
+    --blue-light: #3D7EB3;
+    --blue-pale:  #EAF2F8;
+    --paper:      #F8FAFC;
+    --ink:        #1F2D3D;
+    --slate:      #5C6B7C;
+    --line:       #D9E2EA;
+    --white:      #FFFFFF;
+
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  .gc-page * { box-sizing: border-box; }
+  .gc-page { font-family: var(--font-body); color: var(--ink); background: var(--paper); }
+  .gc-page h1, .gc-page h2, .gc-page h3, .gc-page h4 { font-family: var(--font-display); color: var(--navy); margin: 0; }
+  .gc-page p { color: var(--slate); line-height: 1.6; margin: 0; }
+  .gc-page a { text-decoration: none; }
+  .gc-page section { padding: 5.5rem 1.5rem; }
+
+  .gc-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    display: inline-block;
+    margin-bottom: 0.9rem;
+  }
+
+  /* Buttons */
+  .gc-btn { display: inline-block; padding: 0.85rem 1.8rem; border-radius: 4px; font-weight: 600; font-size: 0.95rem; border: 1px solid transparent; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+  .gc-btn-primary { background: var(--blue); color: var(--white); }
+  .gc-btn-primary:hover { background: var(--navy); }
+  .gc-btn-outline { background: transparent; color: var(--navy); border-color: var(--line); }
+  .gc-btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* HERO */
+  .gc-hero { padding: 5rem 1.5rem 4rem; max-width: 1180px; margin: 0 auto; }
+  .gc-hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 3.5rem; align-items: center; }
+  .gc-hero h1 { font-size: 2.7rem; line-height: 1.18; font-weight: 600; }
+  .gc-hero-sub { margin-top: 1.2rem; font-size: 1.05rem; max-width: 480px; }
+  .gc-hero-actions { display: flex; gap: 0.9rem; margin-top: 2.2rem; flex-wrap: wrap; }
+
+  /* Ledger panel (signature element) */
+  .gc-ledger { background: var(--white); border: 1px solid var(--line); border-radius: 6px; padding: 2rem 2.1rem; box-shadow: 0 18px 40px -22px rgba(16, 42, 67, 0.35); }
+  .gc-ledger-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--navy); padding-bottom: 0.75rem; margin-bottom: 0.4rem; }
+  .gc-ledger-head span:first-child { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate); }
+  .gc-ledger-head span:last-child { font-family: var(--font-mono); font-size: 0.72rem; color: var(--slate); }
+  .gc-ledger-row { display: flex; justify-content: space-between; align-items: center; padding: 0.95rem 0; border-bottom: 1px dashed var(--line); }
+  .gc-ledger-row:last-child { border-bottom: none; }
+  .gc-ledger-label { font-size: 0.92rem; color: var(--ink); font-weight: 500; }
+  .gc-ledger-value { font-family: var(--font-mono); font-size: 1.05rem; color: var(--blue); font-weight: 500; }
+
+  /* FEATURES */
+  .gc-features { max-width: 1180px; margin: 0 auto; }
+  .gc-section-head { max-width: 560px; margin-bottom: 3rem; }
+  .gc-section-head h2 { font-size: 2rem; font-weight: 600; margin-top: 0.4rem; }
+  .gc-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .gc-feature-card { background: var(--white); padding: 2.2rem 1.9rem; }
+  .gc-feature-icon { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 1.1rem; color: var(--blue); }
+  .gc-feature-icon svg { width: 19px; height: 19px; }
+  .gc-feature-card h3 { font-size: 1.08rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .gc-feature-card p { font-size: 0.92rem; }
+
+  /* ROLES / ACCESS TIERS */
+  .gc-roles { background: var(--navy); }
+  .gc-roles-inner { max-width: 1180px; margin: 0 auto; }
+  .gc-roles .gc-section-head h2 { color: var(--white); }
+  .gc-roles .gc-eyebrow { color: var(--blue-light); }
+  .gc-tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
+  .gc-tier-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 2rem 1.8rem; }
+  .gc-tier-num { font-family: var(--font-mono); font-size: 0.78rem; color: var(--blue-light); letter-spacing: 0.06em; margin-bottom: 1.1rem; }
+  .gc-tier-card h4 { color: var(--white); font-size: 1.15rem; font-weight: 600; margin-bottom: 0.55rem; }
+  .gc-tier-card p { color: #B7C4D1; font-size: 0.92rem; }
+
+  /* CTA */
+  .gc-cta { text-align: center; background: var(--blue-pale); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .gc-cta h2 { font-size: 1.9rem; font-weight: 600; }
+  .gc-cta p { margin-top: 0.7rem; margin-bottom: 2rem; }
+  .gc-cta-actions { display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 880px) {
+    .gc-hero-grid { grid-template-columns: 1fr; }
+    .gc-feature-grid { grid-template-columns: 1fr; }
+    .gc-tier-grid { grid-template-columns: 1fr; }
+    .gc-hero h1 { font-size: 2.1rem; }
+  }
+</style>
+
+<div class="gc-page">
+
+  <!-- HERO -->
+  <section class="gc-hero">
+    <div class="gc-hero-grid">
+      <div>
+        <span class="gc-eyebrow">Retail Management Platform</span>
+        <h1>Run your store on facts,<br>not guesswork.</h1>
+        <p class="gc-hero-sub">
+          Good Choice gives supermarket teams one accurate view of inventory, sales, and staff —
+          so directors, admins, and sales agents are always working from the same numbers.
+        </p>
+        <div class="gc-hero-actions">
+          <a href="/signup" class="gc-btn gc-btn-primary">Create your account</a>
+          <a href="/login" class="gc-btn gc-btn-outline">Staff login</a>
+        </div>
+      </div>
+
+      <div class="gc-ledger">
+        <div class="gc-ledger-head">
+          <span>Today's snapshot</span>
+          <span>Live</span>
+        </div>
+        <div class="gc-ledger-row">
+          <span class="gc-ledger-label">Products tracked</span>
+          <span class="gc-ledger-value">12,400+</span>
+        </div>
+        <div class="gc-ledger-row">
+          <span class="gc-ledger-label">Platform uptime</span>
+          <span class="gc-ledger-value">99.9%</span>
+        </div>
+        <div class="gc-ledger-row">
+          <span class="gc-ledger-label">Access tiers</span>
+          <span class="gc-ledger-value">Director · Admin · Sales</span>
+        </div>
+        <div class="gc-ledger-row">
+          <span class="gc-ledger-label">Inventory sync</span>
+          <span class="gc-ledger-value">Real-time</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="gc-features">
+    <div class="gc-section-head">
+      <span class="gc-eyebrow">What's included</span>
+      <h2>Everything your store needs to stay accurate</h2>
+    </div>
+    <div class="gc-feature-grid">
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.5 12 4 3 8.5l9 4.5 9-4.5Z"/><path d="M3 8.5V16l9 4.5 9-4.5V8.5"/><path d="M12 13v7.5"/></svg>
+        </div>
+        <h3>Inventory management</h3>
+        <p>Track stock levels, expiry dates, and reorder points across every category in real time.</p>
+      </div>
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M3 19h18"/></svg>
+        </div>
+        <h3>Sales analytics</h3>
+        <p>Daily, weekly, and monthly dashboards that show what's moving and what isn't.</p>
+      </div>
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.4.4 4.5 2.2 4.5 4.8"/></svg>
+        </div>
+        <h3>Staff management</h3>
+        <p>Assign roles, manage shifts, and track performance across your whole team.</p>
+      </div>
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+        </div>
+        <h3>POS integration</h3>
+        <p>Sync with your point-of-sale system for live transactions and receipts.</p>
+      </div>
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 4-2 5-2 7h16c0-2-2-3-2-7Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        </div>
+        <h3>Smart alerts</h3>
+        <p>Low-stock warnings, price-change notices, and daily summaries, sent automatically.</p>
+      </div>
+
+      <div class="gc-feature-card">
+        <div class="gc-feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <h3>Role-based access</h3>
+        <p>Granular permissions keep every staff member focused on what's relevant to their role.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ACCESS TIERS -->
+  <section class="gc-roles">
+    <div class="gc-roles-inner">
+      <div class="gc-section-head">
+        <span class="gc-eyebrow">Access levels</span>
+        <h2>Three tiers, one accurate system</h2>
+      </div>
+      <div class="gc-tier-grid">
+        <div class="gc-tier-card">
+          <div class="gc-tier-num">TIER 01 — DIRECTOR</div>
+          <h4>Full oversight</h4>
+          <p>View financials, approve budgets, and manage all staff and system settings.</p>
+        </div>
+        <div class="gc-tier-card">
+          <div class="gc-tier-num">TIER 02 — ADMIN</div>
+          <h4>Day-to-day operations</h4>
+          <p>Manage inventory, pricing, and suppliers, and generate reports.</p>
+        </div>
+        <div class="gc-tier-card">
+          <div class="gc-tier-num">TIER 03 — SALES AGENT</div>
+          <h4>Checkout operations</h4>
+          <p>Process transactions and handle customer requests at the till.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="gc-cta">
+    <h2>Ready to run a more accurate store?</h2>
+    <p>Set up Good Choice for your team in under five minutes.</p>
+    <div class="gc-cta-actions">
+      <a href="/signup" class="gc-btn gc-btn-primary">Create your account</a>
+      <a href="/login" class="gc-btn gc-btn-outline">Staff login</a>
+    </div>
+  </section>
+
 </div>
-
-<!-- FEATURES -->
-<section class="features">
-  <div class="section-head">
-    <div class="section-eyebrow">What We Offer</div>
-    <h2>Everything Your Store Needs</h2>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📦</div>
-      <h3>Inventory Management</h3>
-      <p>Track stock levels, expiry dates, and reorder points across all product categories in real time.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Sales Analytics</h3>
-      <p>Daily, weekly, and monthly sales dashboards that reveal what's moving and what isn't.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👥</div>
-      <h3>Staff Management</h3>
-      <p>Assign roles, manage shifts, and track performance across your entire supermarket team.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🧾</div>
-      <h3>POS Integration</h3>
-      <p>Sync seamlessly with your point-of-sale system for live transaction records and receipts.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔔</div>
-      <h3>Smart Alerts</h3>
-      <p>Low stock warnings, price change notifications, and daily summary reports sent automatically.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔒</div>
-      <h3>Role-Based Access</h3>
-      <p>Granular permissions ensure each staff member sees only what's relevant to their role.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ROLES SECTION -->
-<section class="roles-section">
-  <div class="section-head">
-    <div class="section-eyebrow" style="color:var(--gc-gold)">Access Levels</div>
-    <h2 style="color:#fff">Built for Every Team Member</h2>
-  </div>
-  <div class="roles-grid">
-    <div class="role-pill">
-      <div class="rp-icon">👑</div>
-      <h4>Director</h4>
-      <p>Full oversight. View financials, approve budgets, manage all staff and system settings.</p>
-    </div>
-    <div class="role-pill">
-      <div class="rp-icon">🗂️</div>
-      <h4>Admin</h4>
-      <p>Day-to-day operations. Manage inventory, pricing, suppliers, and generate reports.</p>
-    </div>
-    <div class="role-pill">
-      <div class="rp-icon">🛍️</div>
-      <h4>Sales Agent</h4>
-      <p>Process transactions, handle customer requests, and manage checkout operations.</p>
-    </div>
-  </div>
-</section>
-
-<!-- CTA STRIP -->
-<section class="cta-strip">
-  <h2>Ready to Run a Smarter Store?</h2>
-  <p>Join the Good Choice platform today — setup takes under 5 minutes.</p>
-  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
-    <a href="/signup" class="btn-primary" style="width:auto;padding:.85rem 2.5rem;">Create Your Account</a>
-    <a href="/login" class="btn-outline" style="padding:.85rem 2.5rem;">Staff Login</a>
-  </div>
-</section>
 
 <%- include('partials/footer') %>

@@ -60,14 +60,14 @@ h1 {
 .value {
   font-size: 24px;
   font-weight: bold;
-  color: green;
+  color: #1E5A8A; ;
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 15px;
-  color: green;
+  color: #1E5A8A; ;
 }
 
 /* =========================
@@ -96,7 +96,7 @@ h1 {
 }
 
 .tab-btn.active {
-  background: green;
+  background: #1E5A8A;
   color: white;
 }
 
@@ -134,7 +134,7 @@ select {
 
 input:focus,
 select:focus {
-  border-color: green;
+  border-color: #1E5A8A; ;
 }
 
 /* =========================
@@ -142,7 +142,7 @@ select:focus {
 ========================= */
 
 .btn {
-  background: green;
+  background: #1E5A8A;
   color: white;
   border: none;
   padding: 11px 16px;
@@ -153,7 +153,7 @@ select:focus {
 }
 
 .btn:hover {
-  background: green;
+  background: #1E5A8A;
 }
 
 .btn.small {
@@ -185,7 +185,7 @@ table {
 }
 
 thead {
-  background: green;
+  background: #1E5A8A;
   color: white;
 }
 
@@ -308,10 +308,10 @@ tbody tr:hover {
 }
 
 .logout-btn {
-  background-color: green;
+  background-color: #1E5A8A;
 }
 .logout-btn:hover {
-  background-color: green;
+  background-color: #1E5A8A;
 }
 
 @media (max-width: 500px) {
