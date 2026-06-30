@@ -61,12 +61,157 @@ function requireLogin(req, res, next) {
   next();
 }
 
+async function ensureUserSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id             SERIAL        PRIMARY KEY,
+      fullname       VARCHAR(100)  NOT NULL,
+      email          VARCHAR(255)  NOT NULL UNIQUE,
+      password_hash  TEXT          NOT NULL,
+      role           VARCHAR(20)   NOT NULL,
+      staff_id       VARCHAR(50)   DEFAULT NULL,
+      is_active      BOOLEAN       NOT NULL DEFAULT TRUE,
+      approval_status VARCHAR(20)  NOT NULL DEFAULT 'approved',
+      last_login_at  TIMESTAMPTZ   DEFAULT NULL,
+      created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+      updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET approval_status = COALESCE(approval_status, 'approved')
+    WHERE approval_status IS NULL
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET is_active = COALESCE(is_active, TRUE)
+    WHERE is_active IS NULL
+  `);
+
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'users_role_check'
+      ) THEN
+        ALTER TABLE users DROP CONSTRAINT users_role_check;
+      END IF;
+    END $$;
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+      ADD CONSTRAINT users_role_check
+      CHECK (role IN ('admin', 'staff', 'manager', 'director', 'sales_agent'))
+  `);
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email))
+  `);
+
+  await pool.query(`
+    CREATE OR REPLACE FUNCTION set_updated_at()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+
+  await pool.query(`
+    DROP TRIGGER IF EXISTS trg_users_updated_at ON users
+  `);
+
+  await pool.query(`
+    CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+  `);
+}
+
+async function ensureDirectorAccount() {
+  await ensureUserSchema();
+
+  const directorEmail = process.env.DIRECTOR_EMAIL || 'buaydirector@gmail.com';
+  const directorPassword = process.env.DIRECTOR_PASSWORD || 'khor2026';
+
+  const passwordHash = await bcrypt.hash(directorPassword, SALT_ROUNDS);
+  const normalizedEmail = directorEmail.toLowerCase().trim();
+
+  const existingByEmail = await pool.query(
+    'SELECT id FROM users WHERE LOWER(email) = $1',
+    [normalizedEmail]
+  );
+
+  if (existingByEmail.rows.length > 0) {
+    await pool.query(
+      `UPDATE users
+       SET fullname = $1,
+           email = $2,
+           password_hash = $3,
+           role = 'director',
+           is_active = TRUE,
+           approval_status = 'approved'
+       WHERE id = $4`,
+      ['System Director', normalizedEmail, passwordHash, existingByEmail.rows[0].id]
+    );
+    return;
+  }
+
+  const existingDirector = await pool.query(
+    'SELECT id FROM users WHERE role = $1 ORDER BY id LIMIT 1',
+    ['director']
+  );
+
+  if (existingDirector.rows.length > 0) {
+    await pool.query(
+      `UPDATE users
+       SET fullname = $1,
+           email = $2,
+           password_hash = $3,
+           role = 'director',
+           is_active = TRUE,
+           approval_status = 'approved'
+       WHERE id = $4`,
+      ['System Director', normalizedEmail, passwordHash, existingDirector.rows[0].id]
+    );
+    return;
+  }
+
+  await pool.query(
+    `INSERT INTO users (fullname, email, password_hash, role, is_active, approval_status)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    ['System Director', normalizedEmail, passwordHash, 'director', true, 'approved']
+  );
+}
+
+async function initializeApp() {
+  await ensureDirectorAccount();
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Good Choice running on http://localhost:${PORT}`));
+}
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.get('/',       (_req, res) => res.render('home'));
-app.get('/login',  (_req, res) => res.render('login',  { error: null }));
+app.get('/login',  (_req, res) => res.render('login',  { error: null, success: null }));
 
-app.get('/signup', (_req, res) => res.render('signup', { error: null }));
+app.get('/signup', (_req, res) => res.render('signup', { error: null, success: null }));
 
 app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
@@ -75,9 +220,10 @@ app.post('/logout', (req, res) => {
 app.post('/signup', async (req, res) => {
   try {
     const { fullname, email, password, role, staffId } = req.body;
+    const selectedRole = role === 'admin' ? 'admin' : 'sales_agent';
 
-    if (!fullname || !email || !password || !role) {
-      return res.render('signup', { error: 'All fields are required.' });
+    if (!fullname || !email || !password) {
+      return res.render('signup', { error: 'All fields are required.', success: null });
     }
 
     const existing = await pool.query(
@@ -85,21 +231,24 @@ app.post('/signup', async (req, res) => {
       [email.toLowerCase().trim()]
     );
     if (existing.rows.length > 0) {
-      return res.render('signup', { error: 'An account with that email already exists.' });
+      return res.render('signup', { error: 'An account with that email already exists.', success: null });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     await pool.query(
-      `INSERT INTO users (fullname, email, password_hash, role, staff_id)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [fullname, email.toLowerCase().trim(), passwordHash, role, staffId || null]
+      `INSERT INTO users (fullname, email, password_hash, role, staff_id, is_active, approval_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [fullname, email.toLowerCase().trim(), passwordHash, selectedRole, staffId || null, false, 'pending']
     );
 
-    res.redirect('/login');
+    return res.render('signup', {
+      error: null,
+      success: 'Account created successfully. Please wait for director approval before you can sign in.'
+    });
   } catch (err) {
     console.error('Signup error:', err);
-    res.render('signup', { error: 'Something went wrong. Please try again.' });
+    res.render('signup', { error: 'Something went wrong. Please try again.', success: null });
   }
 });
 
@@ -108,22 +257,36 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.render('login', { error: 'Please fill in all fields.' });
+      return res.render('login', { error: 'Please fill in all fields.', success: null });
     }
 
     const result = await pool.query(
-      'SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = TRUE',
+      'SELECT * FROM users WHERE LOWER(email) = $1',
       [email.toLowerCase().trim()]
     );
     const user = result.rows[0];
 
     if (!user) {
-      return res.render('login', { error: 'Invalid email or password.' });
+      return res.render('login', { error: 'Invalid email or password.', success: null });
+    }
+
+    if (user.approval_status === 'pending' || user.is_active === false) {
+      return res.render('login', {
+        error: 'Your account is waiting for director approval.',
+        success: null
+      });
+    }
+
+    if (user.approval_status === 'rejected') {
+      return res.render('login', {
+        error: 'Your account was rejected by the director.',
+        success: null
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.render('login', { error: 'Invalid email or password.' });
+      return res.render('login', { error: 'Invalid email or password.', success: null });
     }
 
     await pool.query(
@@ -142,7 +305,7 @@ app.post('/login', async (req, res) => {
       case 'admin':
         return res.redirect('/inventory');
       case 'director':
-        return res.redirect('/dashboard');
+        return res.redirect('/director/owner-check');
       case 'sales_agent':
         return res.redirect('/agent');
       default:
@@ -151,47 +314,368 @@ app.post('/login', async (req, res) => {
 
   } catch (err) {
     console.error('Login error:', err);
-    res.render('login', { error: 'Something went wrong. Please try again.' });
+    res.render('login', { error: 'Something went wrong. Please try again.', success: null });
   }
 });
+app.get('/director/approvals', requireLogin, async (req, res) => {
+  try {
+    if (req.session.user.role !== 'director') {
+      return res.redirect('/dashboard');
+    }
+
+    const message = req.query.message ? req.query.message : null;
+    const pendingUsersResult = await pool.query(`
+      SELECT id, fullname, email, role, staff_id, created_at
+      FROM users
+      WHERE approval_status = 'pending'
+      ORDER BY created_at DESC
+    `);
+
+    res.render('director-approvals', {
+      user: req.session.user,
+      pendingUsers: pendingUsersResult.rows,
+      message
+    });
+  } catch (err) {
+    console.error('Approvals page error:', err);
+    res.status(500).send('<h2>Approvals error: ' + err.message + '</h2>');
+  }
+});
+
+app.post('/director/approvals/:id/approve', requireLogin, async (req, res) => {
+  try {
+    if (req.session.user.role !== 'director') {
+      return res.redirect('/dashboard');
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET is_active = TRUE,
+           approval_status = 'approved'
+       WHERE id = $1`,
+      [req.params.id]
+    );
+
+    return res.redirect('/director/approvals?message=' + encodeURIComponent('User approved successfully.'));
+  } catch (err) {
+    console.error('Approve user error:', err);
+    return res.redirect('/director/approvals');
+  }
+});
+
+app.post('/director/approvals/:id/reject', requireLogin, async (req, res) => {
+  try {
+    if (req.session.user.role !== 'director') {
+      return res.redirect('/dashboard');
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET is_active = FALSE,
+           approval_status = 'rejected'
+       WHERE id = $1`,
+      [req.params.id]
+    );
+
+    return res.redirect('/director/approvals?message=' + encodeURIComponent('User rejected successfully.'));
+  } catch (err) {
+    console.error('Reject user error:', err);
+    return res.redirect('/director/approvals');
+  }
+});
+
+async function loadDirectorDashboardData() {
+  const hasSalesTable = await pool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'sales'
+    ) AS exists
+  `);
+
+  const hasProductsTable = await pool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'products'
+    ) AS exists
+  `);
+
+  const hasUsersTable = await pool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'users'
+    ) AS exists
+  `);
+
+  if (!hasSalesTable.rows[0].exists) {
+    return {
+      stats: {
+        totalRevenue: 0,
+        revenueGrowth: 0,
+        totalTransactions: 0,
+        txGrowth: 0,
+        avgSaleValue: 0,
+        activeStaff: hasUsersTable.rows[0].exists ? 0 : 0,
+        branchCount: 0,
+        lowStockCount: 0,
+        grossProfit: 0,
+        profitMargin: '0.0'
+      },
+      salesChart: { labels: ['Jan','Feb','Mar','Apr','May','Jun'], revenue: [0,0,0,0,0,0], target: [45,45,45,45,45,45] },
+      branchSales: [],
+      inventory: [],
+      staffPerformance: [],
+      sales: [],
+      topProducts: []
+    };
+  }
+
+  const totalsResult = await pool.query(`
+    SELECT
+      COALESCE(SUM(total), 0) AS "totalRevenue",
+      COUNT(*)::int AS "totalTransactions"
+    FROM sales
+  `);
+  const totals = totalsResult.rows[0];
+
+  const previousRevenueResult = await pool.query(`
+    SELECT COALESCE(SUM(total), 0) AS total
+    FROM sales
+    WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+      AND created_at < DATE_TRUNC('month', CURRENT_DATE)
+  `);
+  const previousRevenue = Number(previousRevenueResult.rows[0].total) || 0;
+  const totalRevenue = Number(totals.totalRevenue) || 0;
+  const totalTransactions = Number(totals.totalTransactions) || 0;
+
+  const previousTransactionsResult = await pool.query(`
+    SELECT COUNT(*)::int AS count
+    FROM sales
+    WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+      AND created_at < DATE_TRUNC('month', CURRENT_DATE)
+  `);
+  const previousTransactions = Number(previousTransactionsResult.rows[0].count) || 0;
+
+  const revenueGrowth = previousRevenue === 0
+    ? (totalRevenue > 0 ? 100 : 0)
+    : ((totalRevenue - previousRevenue) / previousRevenue) * 100;
+
+  const txGrowth = previousTransactions === 0
+    ? (totalTransactions > 0 ? 100 : 0)
+    : ((totalTransactions - previousTransactions) / previousTransactions) * 100;
+
+  const salesChartResult = await pool.query(`
+    SELECT
+      TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS label,
+      COALESCE(SUM(total), 0) AS revenue
+    FROM sales
+    WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months')
+    GROUP BY DATE_TRUNC('month', created_at)
+    ORDER BY DATE_TRUNC('month', created_at)
+  `);
+
+  const salesChartMap = new Map(salesChartResult.rows.map(row => [row.label, Number(row.revenue)]));
+  const salesChart = {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+    revenue: [0,0,0,0,0,0],
+    target: [45,45,45,45,45,45]
+  };
+
+  const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun'];
+  monthLabels.forEach((label, index) => {
+    if (salesChartMap.has(label)) {
+      salesChart.revenue[index] = salesChartMap.get(label);
+    }
+  });
+
+  let inventory = [];
+  if (hasProductsTable.rows[0].exists) {
+    const inventoryResult = await pool.query(`
+      SELECT
+        COALESCE(c.name, 'Uncategorized') AS category,
+        COUNT(p.id)::int AS "skuCount",
+        COALESCE(SUM(p.stock * p.cost_price), 0) AS "stockValue",
+        COUNT(CASE WHEN p.stock <= COALESCE(p.reorder_level, 0) THEN 1 END)::int AS "lowCount"
+      FROM products p
+      LEFT JOIN categories c ON c.id = p.category_id
+      GROUP BY c.name
+      ORDER BY c.name
+    `);
+    inventory = inventoryResult.rows.map(row => ({
+      category: row.category,
+      skuCount: Number(row.skuCount),
+      stockValue: Number(row.stockValue),
+      lowCount: Number(row.lowCount)
+    }));
+  }
+
+  const salesResult = await pool.query(`
+    SELECT
+      TO_CHAR(s.created_at, 'YYYY-MM-DD HH24:MI') AS date,
+      p.name AS "productName",
+      s.qty,
+      s.price,
+      s.total
+    FROM sales s
+    LEFT JOIN products p ON p.id = s.product_id
+    ORDER BY s.created_at DESC
+    LIMIT 8
+  `);
+  const sales = salesResult.rows.map(row => ({
+    date: row.date,
+    productName: row.productName || 'Unknown product',
+    qty: Number(row.qty),
+    price: Number(row.price),
+    total: Number(row.total)
+  }));
+
+  const topProductsResult = await pool.query(`
+    SELECT
+      p.name,
+      SUM(s.qty)::int AS qty,
+      SUM(s.total) AS revenue
+    FROM sales s
+    LEFT JOIN products p ON p.id = s.product_id
+    GROUP BY p.name
+    ORDER BY revenue DESC
+    LIMIT 5
+  `);
+  const topProducts = topProductsResult.rows.map(row => ({
+    name: row.name || 'Unknown product',
+    qty: Number(row.qty),
+    revenue: Number(row.revenue)
+  }));
+
+  let lowStockCount = 0;
+  if (hasProductsTable.rows[0].exists) {
+    const lowStockResult = await pool.query(`
+      SELECT COUNT(*)::int AS count
+      FROM products
+      WHERE stock <= COALESCE(reorder_level, 0)
+    `);
+    lowStockCount = Number(lowStockResult.rows[0].count) || 0;
+  }
+
+  const activeStaff = hasUsersTable.rows[0].exists
+    ? (await pool.query(`
+        SELECT COUNT(*)::int AS count
+        FROM users
+        WHERE is_active = TRUE
+          AND role IN ('director', 'admin', 'sales_agent', 'staff', 'manager')
+      `)).rows[0].count
+    : 0;
+
+  const grossProfit = totalRevenue - (await (async () => {
+    if (!hasProductsTable.rows[0].exists) return 0;
+    const result = await pool.query(`
+      SELECT COALESCE(SUM(s.qty * p.cost_price), 0) AS total
+      FROM sales s
+      JOIN products p ON p.id = s.product_id
+    `);
+    return Number(result.rows[0].total) || 0;
+  })());
+
+  const stats = {
+    totalRevenue,
+    revenueGrowth: Number(revenueGrowth.toFixed(1)),
+    totalTransactions,
+    txGrowth: Number(txGrowth.toFixed(1)),
+    avgSaleValue: totalTransactions > 0 ? Number((totalRevenue / totalTransactions).toFixed(0)) : 0,
+    activeStaff: Number(activeStaff) || 0,
+    branchCount: 1,
+    lowStockCount,
+    grossProfit,
+    profitMargin: totalRevenue > 0 ? Number(((grossProfit / totalRevenue) * 100).toFixed(1)).toString() : '0.0'
+  };
+
+  const branchSales = [];
+  const staffPerformance = [];
+
+  return { stats, salesChart, branchSales, inventory, staffPerformance, sales, topProducts };
+}
+
+app.get('/director/owner-check', requireLogin, (req, res) => {
+  if (req.session.user.role !== 'director') {
+    return res.redirect('/dashboard');
+  }
+
+  res.render('director-owner-check', {
+    user: req.session.user,
+    error: null
+  });
+});
+
+app.post('/director/owner-check', requireLogin, (req, res) => {
+  if (req.session.user.role !== 'director') {
+    return res.redirect('/dashboard');
+  }
+
+  const answer = req.body.ownerDecision;
+  if (answer === 'yes') {
+    return res.redirect('/director/change-password');
+  }
+
+  return res.redirect('/dashboard');
+});
+
+app.get('/director/change-password', requireLogin, (req, res) => {
+  if (req.session.user.role !== 'director') {
+    return res.redirect('/dashboard');
+  }
+
+  res.render('director-change-password', {
+    user: req.session.user,
+    error: null,
+    success: null
+  });
+});
+
+app.post('/director/change-password', requireLogin, async (req, res) => {
+  if (req.session.user.role !== 'director') {
+    return res.redirect('/dashboard');
+  }
+
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!newPassword || !confirmPassword) {
+    return res.render('director-change-password', {
+      user: req.session.user,
+      error: 'Please fill in both password fields.',
+      success: null
+    });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.render('director-change-password', {
+      user: req.session.user,
+      error: 'Passwords do not match.',
+      success: null
+    });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await pool.query(
+    'UPDATE users SET password_hash = $1 WHERE id = $2',
+    [passwordHash, req.session.user.id]
+  );
+
+  return res.render('director-change-password', {
+    user: req.session.user,
+    error: null,
+    success: 'Password updated successfully. You can continue to the dashboard.'
+  });
+});
+
 app.get('/dashboard', requireLogin, async (req, res) => {
   try {
     const user = req.session.user;
-
-    const stats = {
-      totalRevenue: 0,
-      revenueGrowth: 0,
-      totalTransactions: 0,
-      txGrowth: 0,
-      avgSaleValue: 0,
-      activeStaff: 0,
-      branchCount: 0,
-      lowStockCount: 0,
-      grossProfit: 0,
-      profitMargin: '0.0'
-    };
-
-    const salesChart = {
-      labels:  ['Jan','Feb','Mar','Apr','May','Jun'],
-      revenue: [0, 0, 0, 0, 0, 0],
-      target:  [45, 45, 45, 45, 45, 45]
-    };
-
-    const branchSales      = [];
-    const inventory        = [];
-    const staffPerformance = [];
-    const sales            = [];
-    const topProducts      = [];
+    const data = await loadDirectorDashboardData();
 
     res.render('dashboard-director', {
       user,
-      stats,
-      salesChart,
-      branchSales,
-      inventory,
-      staffPerformance,
-      sales,
-      topProducts
+      ...data
     });
 
   } catch (err) {
@@ -635,5 +1119,7 @@ app.get('/agent', requireLogin, async (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Good Choice running on http://localhost:${PORT}`));
+initializeApp().catch(err => {
+  console.error('App initialization failed:', err);
+  process.exit(1);
+});
